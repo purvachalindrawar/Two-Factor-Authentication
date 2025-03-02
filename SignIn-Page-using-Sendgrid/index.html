@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="autocomplete" content="off">
+    <title>Login Page</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.8.1/font/bootstrap-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-size: 400% 400%;
+            margin: 0;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+        }
+        .d-flex-center {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; 
+        }
+        .login-container {
+            max-width: 450px;
+            width: 100%;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        .icon-container {
+            position: absolute;
+            top: -110px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 6rem;
+        }
+        .form-box {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        .form-box {
+            color: #007bff;
+            transform: translateY(-5px);
+        }
+        .form-box input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            background-color: transparent;
+            border: none;
+            border-bottom: 2px solid #ced4da;
+            transition: border-color 0.3s ease, border-width 0.3s ease;
+        }
+        .form-box input:focus {
+            border-bottom: 2px solid #007bff;
+            outline: none;
+        }
+        .form-box label {
+            position: absolute;
+            top: 50%;
+            left: 12px;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            color: #6c757d;
+            pointer-events: none;
+            transition: all 0.4s ease-in-out;
+            padding: 0 4px;
+        }
+        .form-box input:focus + label,
+        .form-box input:not(:placeholder-shown) + label {
+            top: -5px;
+            font-size: 0.97rem;
+            color: #007bff;
+            padding: 0 2px;
+            transition: border o.1s ease-in-out;
+        }
+        .btn-primary {
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: #007bff;
+        }
+        @media (max-width: 600px) {
+            .login-container {
+                padding: 30px;
+                max-width: 90%;
+            }
+            .icon-container {
+                top: -100px;
+                font-size: 5rem;
+            }
+        }
+        
+    </style>
+</head>
+<body>
+    <!-- Icon-->
+    <div class="d-flex-center bg-dark">
+        <div class="login-container bg-light">
+            <div class="icon-container">
+                <i class="bi bi-person-circle" style="color: #007bff"></i>
+            </div>
+            <!--Login Section -->
+            <div class="h4 text-dark mb-4">Sign In</div>
+            <form id="loginForm" method="POST" action="/send2FA" autocomplete="off">
+                <input type="text" style="display: none;">
+                <input type="password" style="display: none;">
+                <div class="form-box">
+                    <input type="email" id="email" class="form-control" placeholder=" " required autocomplete="off">
+                    <label for="email" class="bg-light">Enter your email</label>
+                </div>
+                <div class="form-box">
+                    <input type="password" id="password" class="form-control" placeholder=" " required autocomplete="off">
+                    <label for="password" class="bg-light">Enter your password</label>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="generate2FA()">Submit</button>
+            </form>
+            <div id="2faSection" style="display: none;">
+                <div class="form-box">
+                    <input type="text" id="2faCode" class="form-control" placeholder=" " required>
+                    <label for="2faCode" class="bg-light">Enter the code</label>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="verify2FA()">Submit Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let generated2FACode = ""; 
+        
+        function generate2FA() {
+            const email = document.getElementById('email').value;
+
+            if (!email.trim()) {
+                alert('Please enter your email.');
+                return;
+            }
+
+            fetch('/send2FA', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.message === '2FA code sent successfully') {
+                    generated2FACode = data.code; // Save generated code for verification
+                    alert('2FA code sent to your email.');
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('2faSection').style.display = 'block';
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred while sending the 2FA code. Please try again.');
+            });
+        }
+
+        function verify2FA() {
+            const enteredCode = document.getElementById('2faCode').value;
+
+            if (!enteredCode) {
+                alert('Please enter the 2FA code.');
+                return;
+            }
+
+            fetch('/verify2FA', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enteredCode }),
+            })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.message === '2FA verified successfully.') {
+                    alert('Successfully Logged in');
+                    location.reload(); 
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert('An error occurred during verification. Please try again.');
+            });
+        }
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.6.0/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
